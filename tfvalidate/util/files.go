@@ -1,4 +1,4 @@
-package tfvalidate
+package util
 
 import "os"
 

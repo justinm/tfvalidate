@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/justinm/tfvalidate/tfvalidate"
 	"log"
 	"os"
@@ -14,7 +13,8 @@ func getCwd() string {
 
 func main() {
 	pathToPlan := flag.String("plan", "", "Path to the plan to lint")
-	pathToLint := flag.String("lint", "", "Path to lint rules, defaults to $CWD/.tfvalidate.json")
+	pathToRules := flag.String("lint", "", "Path to lint rules, defaults to $CWD/.tfvalidate.json")
+	outputType := flag.String("output", "text", "Response type, options are 'text' or 'json'")
 
 	flag.Parse()
 
@@ -22,31 +22,22 @@ func main() {
 		log.Fatal("--plan must be supplied")
 	}
 
-	if len(*pathToLint) == 0 {
-		*pathToLint = getCwd() + "/.tfvalidate.json"
+	if len(*pathToRules) == 0 {
+		*pathToRules = getCwd() + "/.tfvalidate.json"
 	}
 
-	parser := tfvalidate.Parser{}
+	violations := tfvalidate.Validate(*pathToRules, *pathToPlan)
 
-	ruleset, err := parser.Parse(*pathToLint)
-	if err != nil {
-		log.Fatal(err)
+	switch *outputType {
+	case "text":
+		tfvalidate.PrintText(violations)
+	case "json":
+		tfvalidate.PrintJson(violations)
+	default:
+		log.Fatal("Unknown output type")
 	}
 
-	plan, err := tfvalidate.OpenPlan(*pathToPlan)
-	if err != nil {
-		log.Fatal("Failed to open plan at " + *pathToPlan)
-	}
-
-	linter := tfvalidate.Linter{}
-
-	linter.Lint(plan, ruleset)
-
-	if len(linter.Violations) == 0 {
-		fmt.Print("No errors found")
-	} else {
-		for _, violation := range linter.Violations {
-			fmt.Printf("Violation: %s", violation.Reason)
-		}
+	if len(violations) > 0 {
+		log.Fatal("Violations were discovered")
 	}
 }

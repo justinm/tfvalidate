@@ -1,7 +1,7 @@
 {
   "rules": [
     {
-      "resource": "aws_rds_cluster",
+      "resources": ["aws_rds_cluster"],
       "attributes": [
         {
           "name": "tags.Name",
