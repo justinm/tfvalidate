@@ -1,4 +1,4 @@
-package tflint
+package tfvalidate
 
 import (
 	"github.com/hashicorp/terraform/terraform"

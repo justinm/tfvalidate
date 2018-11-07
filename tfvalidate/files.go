@@ -1,4 +1,4 @@
-package tflint
+package tfvalidate
 
 import "os"
 

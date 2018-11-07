@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/justinm/tflint/tflint"
+	"github.com/justinm/tfvalidate/tfvalidate"
 	"log"
 	"os"
 )
@@ -14,7 +14,7 @@ func getCwd() string {
 
 func main() {
 	pathToPlan := flag.String("plan", "", "Path to the plan to lint")
-	pathToLint := flag.String("lint", "", "Path to lint rules, defaults to $CWD/.tflint.json")
+	pathToLint := flag.String("lint", "", "Path to lint rules, defaults to $CWD/.tfvalidate.json")
 
 	flag.Parse()
 
@@ -23,22 +23,22 @@ func main() {
 	}
 
 	if len(*pathToLint) == 0 {
-		*pathToLint = getCwd() + "/.tflint.json"
+		*pathToLint = getCwd() + "/.tfvalidate.json"
 	}
 
-	parser := tflint.Parser{}
+	parser := tfvalidate.Parser{}
 
 	ruleset, err := parser.Parse(*pathToLint)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	plan, err := tflint.OpenPlan(*pathToPlan)
+	plan, err := tfvalidate.OpenPlan(*pathToPlan)
 	if err != nil {
 		log.Fatal("Failed to open plan at " + *pathToPlan)
 	}
 
-	linter := tflint.Linter{}
+	linter := tfvalidate.Linter{}
 
 	linter.Lint(plan, ruleset)
 
