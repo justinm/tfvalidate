@@ -14,11 +14,11 @@ Usage
 -----
 
 ```bash
-tfvalidate --plan $PATH_TO_PLAN
+terraform plan -out=my.plan
+tfvalidate --plan my.plan
 ```
 
-
-Notes
------
-
-tfvalidate is a work-in-progress. Features may be described that contain buggy implementations or may not yet exist.
+Capabilities
+------------
+tfvalidate works by ensuring attributes and their values meet certain specifications. For a full list of supported rules
+and it's syntax, please see [.tfvalidate.json](.tfvalidate.json).
