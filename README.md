@@ -17,6 +17,7 @@ Usage
 tfvalidate --plan $PATH_TO_PLAN
 ```
 
+
 Notes
 -----
 
