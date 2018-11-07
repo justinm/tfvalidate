@@ -1,0 +1,26 @@
+{
+  "rules": [
+    {
+      "resource": "aws_rds_cluster",
+      "attributes": [
+        {
+          "name": "tags.Name",
+          "beginsWith": "product-"
+        },
+        {
+          "name": "tags.cmenv",
+          "in": [
+            "Development",
+            "Production",
+            "Staging",
+            "Test"
+          ]
+        },
+        {
+          "name": "name",
+          "beginsWith": "learn-svc"
+        }
+      ]
+    }
+  ]
+}
