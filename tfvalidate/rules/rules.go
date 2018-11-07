@@ -13,4 +13,5 @@ type RuleAttributeDefinition struct {
 	Name       string   `json:"name"`
 	BeginsWith string   `json:"beginsWith"`
 	In         []string `json:"in"`
+	IsRequired bool     `json:"isRequired"`
 }

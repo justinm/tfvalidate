@@ -5,20 +5,22 @@
       "attributes": [
         {
           "name": "tags.Name",
-          "beginsWith": "product-"
+          "beginsWith": "product-",
+          "isRequired": true
         },
         {
-          "name": "tags.cmenv",
+          "name": "tags.Environment",
           "in": [
             "Development",
             "Production",
             "Staging",
             "Test"
-          ]
+          ],
+          "isRequired": true
         },
         {
-          "name": "name",
-          "beginsWith": "learn-svc"
+          "name": "tags.Custom",
+          "isRequired": true
         }
       ]
     }

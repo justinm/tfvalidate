@@ -30,19 +30,20 @@ func (l *Linter) Lint(plan *terraform.Plan, set *rules.RuleSet) {
 func (l *Linter) validateDiff(resourceKey string, diff *terraform.InstanceDiff, set *rules.RuleSet) {
 	resourceType := l.getResourceFromKey(resourceKey)
 
-	for diffAttrName, diffAttr := range diff.Attributes {
-		for i, rule := range set.Rules {
+	for ruleNumber, rule := range set.Rules {
+		if len(rule.ResourceTypes) == 0 {
+			log.Fatal("Rule #" + strconv.Itoa(ruleNumber) + " did not define any resources")
+		}
 
-			if len(rule.ResourceTypes) == 0 {
-				log.Fatal("Rule #" + strconv.Itoa(i) + " did not define any resources")
-			}
+		if len(rule.RuleAttributes) == 0 {
+			log.Fatal("Rule #" + strconv.Itoa(ruleNumber) + " does not define any attributes")
+		}
 
-			if len(rule.RuleAttributes) == 0 {
-				log.Fatal("Rule #" + strconv.Itoa(i) + " does not define any attributes")
-			}
-
+		for _, attrRule := range rule.RuleAttributes {
 			if util.SliceContainsString(rule.ResourceTypes, resourceType) {
-				for _, attrRule := range rule.RuleAttributes {
+				found := false
+
+				for diffAttrName, diffAttr := range diff.Attributes {
 					if attrRule.Name == diffAttrName {
 						action := Action{
 							ResourceKey:  resourceKey,
@@ -53,7 +54,18 @@ func (l *Linter) validateDiff(resourceKey string, diff *terraform.InstanceDiff, 
 						}
 
 						l.validateAction(action)
+						found = true
 					}
+				}
+
+				if !found && attrRule.IsRequired {
+					violation := Violation{
+						ResourceKey: resourceKey,
+						Attribute:   attrRule.Name,
+						Value:       "",
+						Reason:      "Attribute " + resourceKey + "." + attrRule.Name + " is required but not defined",
+					}
+					l.addViolation(violation)
 				}
 			}
 		}
