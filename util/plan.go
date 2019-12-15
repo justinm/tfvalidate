@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"github.com/hashicorp/terraform/plans"
@@ -11,7 +11,8 @@ func ReadPlan(path string) (*plans.Plan, error) {
 		return nil, err
 	}
 
-	plan, err := reader.ReadPlan(); if err != nil {
+	plan, err := reader.ReadPlan()
+	if err != nil {
 		return nil, err
 	}
 

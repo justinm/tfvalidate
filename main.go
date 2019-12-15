@@ -5,6 +5,7 @@ import (
 	"github.com/justinm/tfvalidate/approvers"
 	"github.com/justinm/tfvalidate/linter"
 	"github.com/justinm/tfvalidate/shared"
+	"github.com/justinm/tfvalidate/util"
 	"github.com/mitchellh/go-homedir"
 	"github.com/op/go-logging"
 	"os"
@@ -62,7 +63,7 @@ func main() {
 
 	config := getConfig()
 
-	plan, err := ReadPlan(planPath)
+	plan, err := util.ReadPlan(planPath)
 	if err != nil {
 		logger.Errorf("Unable to read plan: %v", err)
 		os.Exit(EXIT_ERR)
