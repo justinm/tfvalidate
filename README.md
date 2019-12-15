@@ -25,8 +25,9 @@ Capabilities
 ------------
 
 tfvalidate works by ensuring attributes and their values meet certain specifications. For a full list of supported rules
-and it's syntax, please see [.tfvalidate.json](.tfvalidate.json).
+and it's syntax, please see [.tfvalidate.yaml](.tfvalidate.yaml).
 
+Requires Terraform 0.12.9 or higher
 
 License
 -------
