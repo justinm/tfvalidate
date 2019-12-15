@@ -27,7 +27,16 @@
 
 [[constraint]]
   name = "github.com/hashicorp/terraform"
-  version = "0.11.10"
+  version = "0.12.9"
+
+[[constraint]]
+  name = "github.com/op/go-logging"
+  version = "1.0.0"
+
+[[override]]
+  name = "github.com/hashicorp/hcl"
+#  source = "github.com/hashicorp/hcl2"
+
 
 [prune]
   go-tests = true
