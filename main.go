@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	EXIT_ERR = 1
+	EXIT_ERR            = 1
 	EXIT_VALIDATION_ERR = 2
-	EXIT_APPROVERS = 3
+	EXIT_APPROVERS      = 3
 )
 
 func getCwd() string {
@@ -21,12 +21,32 @@ func getCwd() string {
 }
 
 var (
-	logger  = logging.MustGetLogger("")
+	logger = logging.MustGetLogger("")
 
+	action     = flag.String("action", "", "The action to take, one of [lint, approvers]")
 	configPath = flag.String("config", "", "Path to configuration, defaults to ~/.tfvalidate.yaml")
-	outputType = flag.String("output", "text", "Response type, options are 'text' or 'json'")
 	verbose    = flag.Bool("verbose", false, "Optional: verbose logging")
 )
+
+func lintCmd(planPath string) {
+
+}
+
+func getConfig() *shared.Configuration {
+	configFile, err := GetConfigFile()
+	if err != nil {
+		logger.Errorf("Cannot determine location to tfvalidate.yaml")
+		os.Exit(EXIT_ERR)
+	}
+
+	config, errs := shared.GetConfig(*configFile)
+	if errs != nil {
+		logger.Errorf("unable to load configuration: %v", errs)
+		os.Exit(EXIT_ERR)
+	}
+
+	return config
+}
 
 func main() {
 	flag.Parse()
@@ -40,37 +60,40 @@ func main() {
 		os.Exit(EXIT_ERR)
 	}
 
-	configFile, err := GetConfigFile(); if err != nil {
-		logger.Errorf("Cannot determine location to tfvalidate.yaml")
-		os.Exit(EXIT_ERR)
-	}
+	config := getConfig()
 
-	plan, err := ReadPlan(planPath); if err != nil {
+	plan, err := ReadPlan(planPath)
+	if err != nil {
 		logger.Errorf("Unable to read plan: %v", err)
 		os.Exit(EXIT_ERR)
 	}
 
-	config, errs := shared.GetConfig(*configFile)
-	if errs != nil {
-		logger.Errorf("unable to load configuration: %v", errs)
-		os.Exit(EXIT_ERR)
-	}
+	switch *action {
+	case "lint":
+		lint, errs := linter.New(config, plan)
+		if errs != nil {
+			logger.Errorf("unable to initialize linter: %v", errs)
+			os.Exit(EXIT_ERR)
+		}
 
-	lint, errs := linter.New(config, plan); if errs != nil {
-		logger.Errorf("unable to initialize linter: %v", errs)
-		os.Exit(EXIT_ERR)
-	}
+		violations := lint.Lint()
 
-	violations := lint.Lint()
-	if len(violations) != 0 {
 		PrintViolations(violations)
-		os.Exit(EXIT_VALIDATION_ERR)
-	}
+		if len(violations) != 0 {
+			os.Exit(EXIT_VALIDATION_ERR)
+		}
+		break
+	case "approvers":
+		approve := approvers.GetApprovers(config, plan)
 
-	approve := approvers.GetApprovers(config, plan)
-	if len(approve) > 0 {
 		PrintApprovers(approve)
-		os.Exit(EXIT_APPROVERS)
+		if len(approve) > 0 {
+			os.Exit(EXIT_APPROVERS)
+		}
+		break
+	default:
+		flag.PrintDefaults()
+		break
 	}
 
 	os.Exit(0)
@@ -88,7 +111,7 @@ func SetupLogger() {
 		logging.SetLevel(logging.DEBUG, "")
 		backendLeveled.SetLevel(logging.DEBUG, "")
 	} else {
-		logging.SetLevel(logging.INFO, "")
+		logging.SetLevel(logging.WARNING, "")
 		backendLeveled.SetLevel(logging.INFO, "")
 	}
 
