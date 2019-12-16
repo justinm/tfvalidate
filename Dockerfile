@@ -2,12 +2,14 @@ FROM golang:1.11 AS build
 
 ARG REPOSITORY="github.com/justinm/tfvalidate"
 ENV GOPATH=/build
-WORKDIR /build/src/$REPOSITORY/
+WORKDIR /build/src/$REPOSITORY/tfvalidate
 
-COPY vendor/ /build/src/$REPOSITORY/vendor/
-COPY tfvalidate.go Gopkg.lock Gopkg.toml /build/src/$REPOSITORY/
-COPY tfvalidate/ /build/src/$REPOSITORY/tfvalidate/
+RUN mkdir /build/bin \
+    && curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 
+COPY . /build/src/$REPOSITORY/tfvalidate
+
+RUN /build/bin/dep ensure
 RUN go build -o /build/bin/tfvalidate
 
 
