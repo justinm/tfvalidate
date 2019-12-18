@@ -27,7 +27,6 @@ type RuleAttributeDefinition struct {
 type RuleAttributeDefinitionRule struct {
 	StartsWith *string  `yaml:"startsWith"`
 	OneOf      []string `yaml:"oneOf"`
-	Contains   *string  `yaml:"contains"`
 	Required   *bool    `yaml:"required"`
 }
 

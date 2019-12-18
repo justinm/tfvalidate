@@ -129,14 +129,6 @@
   version = "v3.6.1"
 
 [[projects]]
-  digest = "1:f69f3dd5ddb194ab787d0fd8e3ac382576d4f80c36584b70713656d5c72fca70"
-  name = "github.com/bmatcuk/doublestar"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "2437321e1473408f122a95f65df3d8841fec4fba"
-  version = "v1.1.5"
-
-[[projects]]
   digest = "1:865079840386857c809b72ce300be7580cb50d3d3129ce11bf9aa6ca2bc1934a"
   name = "github.com/fatih/color"
   packages = ["."]
@@ -185,14 +177,6 @@
   pruneopts = "UT"
   revision = "2d0692c2e9617365a95b295612ac0d4415ba4627"
   version = "v0.3.1"
-
-[[projects]]
-  digest = "1:582b704bebaa06b48c29b0cec224a6058a09c86883aaddabde889cd1a5f73e1b"
-  name = "github.com/google/uuid"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "0cd6bf5da1e1c83f8b45653022c74f71af0538a4"
-  version = "v1.1.1"
 
 [[projects]]
   digest = "1:766102087520f9d54f2acc72bd6637045900ac735b4a419b128d216f0c5c4876"
@@ -281,11 +265,9 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e797e5474fd530eafa113c7c57c4424fc9bde2607f2ff83abaff937b084f4451"
+  digest = "1:f0e3804c2adbfd98e8e93c46ddc9589daa98f74688d0c958ad17a6698adcea4a"
   name = "github.com/hashicorp/hcl2"
   packages = [
-    "ext/dynblock",
-    "ext/typeexpr",
     "gohcl",
     "hcl",
     "hcl/hclsyntax",
@@ -311,36 +293,22 @@
   revision = "97b3a9cdfa9349086cfad7ea2fe3165bfe3cbf63"
 
 [[projects]]
-  digest = "1:00e2ca0d9581f01003b20c3857c41e8b2f1434b6e279f8fa63d905dfecb4977b"
+  digest = "1:2f41d2e82a74475b356fcc25c7a2fcbe156c6ee1c9def67706a4c5b6e72ba828"
   name = "github.com/hashicorp/terraform"
   packages = [
-    "addrs",
     "config",
-    "configs",
-    "configs/configload",
-    "configs/configschema",
-    "configs/hcl2shim",
+    "config/configschema",
+    "config/hcl2shim",
+    "config/module",
     "dag",
-    "helper/didyoumean",
+    "flatmap",
     "helper/hilmapstructure",
     "httpclient",
-    "internal/modsdir",
-    "lang",
-    "lang/blocktoattr",
-    "lang/funcs",
     "moduledeps",
-    "plans",
-    "plans/internal/planproto",
-    "plans/objchange",
-    "plans/planfile",
     "plugin/discovery",
-    "providers",
-    "provisioners",
     "registry",
     "registry/regsrc",
     "registry/response",
-    "states",
-    "states/statefile",
     "svchost",
     "svchost/auth",
     "svchost/disco",
@@ -349,8 +317,8 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "abec0acf40d8e31ac612a244cf3886fb3bcce0bb"
-  version = "v0.12.9"
+  revision = "12bf5f6afec2a9dcc97357671fdfa9fb972884eb"
+  version = "v0.11.14"
 
 [[projects]]
   digest = "1:bb81097a5b62634f3e9fec1014657855610c82d19b9a40c17612e32651e35dca"
@@ -472,17 +440,6 @@
   version = "v1.2.3"
 
 [[projects]]
-  digest = "1:bb495ec276ab82d3dd08504bbc0594a65de8c3b22c6f2aaa92d05b73fbf3a82e"
-  name = "github.com/spf13/afero"
-  packages = [
-    ".",
-    "mem",
-  ]
-  pruneopts = "UT"
-  revision = "588a75ec4f32903aa5e39a2619ba6a4631e28424"
-  version = "v1.2.2"
-
-[[projects]]
   digest = "1:2643d81498e38e44bdcf480be199cac55f29e97403b0342d962824bfe9960722"
   name = "github.com/ulikunitz/xz"
   packages = [
@@ -496,30 +453,7 @@
   version = "v0.5.6"
 
 [[projects]]
-  digest = "1:bdbeee77ecd82dc2e9bdc6deab3739fb968d953f8660b5577c74585a119db40c"
-  name = "github.com/vmihailenco/msgpack"
-  packages = [
-    ".",
-    "codes",
-  ]
-  pruneopts = "UT"
-  revision = "cd92a145e6d2ce09e792f838dc0b669b680aea29"
-  version = "v4.1.1"
-
-[[projects]]
-  digest = "1:a6c5ab44d09b463220e70b89e20e55e182ba4f7d15144697fe8dfc449d553e73"
-  name = "github.com/vmihailenco/tagparser"
-  packages = [
-    ".",
-    "internal",
-    "internal/parser",
-  ]
-  pruneopts = "UT"
-  revision = "e4b6c8cf4f3d7bb572551d5a531a9f2068b2fd6e"
-  version = "v0.1.1"
-
-[[projects]]
-  digest = "1:bdc499682de63db43dc2fe114105141bee794b9bdff270da8abbd60e8250c03b"
+  digest = "1:0d7e9435e3886a7e8e1c590d4de4d02b7c4b5e0eda082bc94936a23f03b56c47"
   name = "github.com/zclconf/go-cty"
   packages = [
     "cty",
@@ -528,20 +462,11 @@
     "cty/function/stdlib",
     "cty/gocty",
     "cty/json",
-    "cty/msgpack",
     "cty/set",
   ]
   pruneopts = "UT"
   revision = "01e2a242a65eb6f8ee372ddcea68c111fd4da15e"
   version = "v1.1.0"
-
-[[projects]]
-  digest = "1:15fbb37db073777762aa7df4d9109f01de9d9a3fa233f51f5986cada7491562e"
-  name = "github.com/zclconf/go-cty-yaml"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "bc34c981dadb5ed30af852693e3aba8fb6546f42"
-  version = "v1.0.1"
 
 [[projects]]
   digest = "1:7b6ca9454e8d16e34b251f181a4ae430a25805acca64ea46b0448583b44fcfe6"
@@ -610,11 +535,13 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ecff0c65c627299ff316258a094c11f8e0582e3484563d6fe8eadfbf72abc137"
+  digest = "1:3ccab558243edb9baf9a6984d0d247ebe73aa6179c6fd6c9998c1d5d322191c7"
   name = "golang.org/x/net"
   packages = [
     "context",
     "context/ctxhttp",
+    "html",
+    "html/atom",
     "http/httpguts",
     "http2",
     "http2/hpack",
@@ -719,13 +646,10 @@
   version = "v0.14.0"
 
 [[projects]]
-  digest = "1:afb4c626a093946a42f2f7b531c46cb2aebc1c4a30243e9499af43342f1c9843"
+  digest = "1:3c03b58f57452764a4499c55c582346c0ee78c8a5033affe5bdfd9efd3da5bd1"
   name = "google.golang.org/appengine"
   packages = [
     ".",
-    "datastore",
-    "datastore/internal/cloudkey",
-    "datastore/internal/cloudpb",
     "internal",
     "internal/app_identity",
     "internal/base",
@@ -844,8 +768,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/hashicorp/terraform/plans",
-    "github.com/hashicorp/terraform/plans/planfile",
     "github.com/hashicorp/terraform/terraform",
     "github.com/mitchellh/go-homedir",
     "github.com/op/go-logging",

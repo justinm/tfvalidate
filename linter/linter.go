@@ -2,11 +2,10 @@ package linter
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/plans"
+	"github.com/hashicorp/terraform/terraform"
 	"github.com/justinm/tfvalidate/shared"
 	"github.com/justinm/tfvalidate/util"
 	"github.com/op/go-logging"
-	"github.com/zclconf/go-cty/cty"
 	"strings"
 )
 
@@ -14,20 +13,26 @@ var (
 	logger = logging.MustGetLogger("linter")
 )
 
+type ResourceDescription struct {
+	Name string
+	Type string
+}
+
 type Violation struct {
-	Reason    string
-	Change    *plans.ResourceInstanceChange
-	Attribute shared.RuleAttributeDefinition
-	Value     *cty.Value
+	Reason      string
+	Change      *terraform.InstanceDiff
+	Attribute   shared.RuleAttributeDefinition
+	Description ResourceDescription
+	Value       *terraform.ResourceAttrDiff
 }
 
 type Linter struct {
 	Config     *shared.Configuration
-	Plan       *plans.Plan
+	Plan       *terraform.Plan
 	Violations []Violation
 }
 
-func New(config *shared.Configuration, plan *plans.Plan) (*Linter, []error) {
+func New(config *shared.Configuration, plan *terraform.Plan) (*Linter, []error) {
 	linter := Linter{
 		Config: config,
 		Plan:   plan,
@@ -37,19 +42,17 @@ func New(config *shared.Configuration, plan *plans.Plan) (*Linter, []error) {
 }
 
 func (linter *Linter) Lint() []Violation {
-	var resources []plans.ResourceInstanceChangeSrc
-	for _, resourceChange := range linter.Plan.Changes.Resources {
-		resources = append(resources, *resourceChange)
-	}
-
 	if linter.Config.Rules == nil {
 		logger.Warning("no lint rules were found")
 		return nil
 	}
 
-	for _, resource := range resources {
-		_ = linter.LintChange(resource)
+	for _, module := range linter.Plan.Diff.Modules {
+		for key, resource := range module.Resources {
+			_ = linter.LintChange(key, resource)
+		}
 	}
+
 	return linter.Violations
 }
 
@@ -59,56 +62,39 @@ func (linter *Linter) getResourceFromKey(key string) string {
 	return parts[0]
 }
 
-func (linter *Linter) LintChange(change plans.ResourceInstanceChangeSrc) error {
-	resourceName := change.Addr.String()
-	resourceType := change.Addr.Resource.Resource.Type
+func (linter *Linter) LintChange(resourceId string, change *terraform.InstanceDiff) error {
+	parts := strings.Split(resourceId, ".")
+	resourceName := parts[1]
+	resourceType := parts[0]
 
-	validActions := []interface{}{
-		plans.Update,
-		plans.Create,
-		plans.DeleteThenCreate,
-		plans.CreateThenDelete,
+	description := ResourceDescription{
+		Name: resourceName,
+		Type: resourceType,
 	}
 
-	logger.Debugf("Resource will %s: %s (%s)", change.Action.String(), resourceName, resourceType)
-
-	if !util.SliceContains(validActions, change.Action) {
-		logger.Debugf("Resource %s skipped", resourceName)
+	if change.Destroy {
+		logger.Debugf("Resource %s skipped, will be destroyed", resourceName)
 		return nil
 	}
 
-	t, err := change.After.ImpliedType(); if err != nil {
-		return err
-	}
-	diff, err := change.Decode(t)
-	if err != nil {
-		logger.Errorf("Failure in decoding plan: %v", err)
-		return err
-	}
-
 	for _, rule := range linter.Config.Rules {
-		if util.SliceStringContains(rule.ResourceTypes, change.Addr.Resource.Resource.Type) {
-			for _, attribute := range rule.RuleAttributes {
-				for _, subrule := range attribute.Rules {
+		if util.SliceStringContains(rule.ResourceTypes, resourceType) {
+			for _, ruleAttribute := range rule.RuleAttributes {
+				for _, subrule := range ruleAttribute.Rules {
+
 					if subrule.Required != nil && *subrule.Required {
-						violation := linter.validateRequired(attribute, diff)
-						if violation != nil {
-							linter.addViolation(*violation)
-						}
+						violation := linter.validateRequired(description, ruleAttribute, change)
+						linter.addViolation(violation)
 					}
 
 					if subrule.StartsWith != nil {
-						linter.validateStartsWith(attribute, subrule, diff)
+						violation := linter.validateStartsWith(description, ruleAttribute, subrule, change)
+						linter.addViolation(violation)
 					}
 
 					if subrule.OneOf != nil {
-						linter.validateOneOf(attribute, subrule, diff)
-					}
-
-					if subrule.Contains != nil {
-						violation := linter.validateContains(attribute, subrule, diff); if violation != nil {
-							linter.addViolation(*violation)
-						}
+						violation := linter.validateOneOf(description, ruleAttribute, subrule, change)
+						linter.addViolation(violation)
 					}
 				}
 			}
@@ -118,37 +104,25 @@ func (linter *Linter) LintChange(change plans.ResourceInstanceChangeSrc) error {
 	return nil
 }
 
-func (linter *Linter) getAttributeValueFromDiff(name string, currentVal cty.Value) *cty.Value {
-	keys := strings.Split(name, ".")
-
-	for _, key := range keys {
-		if currentVal.Type().IsMapType() || currentVal.Type().IsObjectType() {
-			values := currentVal.AsValueMap()
-
-			val, exists := values[key]
-			if exists {
-				currentVal = val
-				continue
-			} else {
-				return nil
-			}
+func (linter *Linter) getAttributeValueFromDiff(name string, diff *terraform.InstanceDiff) *terraform.ResourceAttrDiff {
+	for attrName, attr := range diff.Attributes {
+		if attrName == name {
+			return attr
 		}
-
-		logger.Errorf("unknown type %s", currentVal.Type().FriendlyName())
-		return nil
 	}
 
-	return &currentVal
+	return nil
 }
 
-func (linter *Linter) validateRequired(attr shared.RuleAttributeDefinition, diff *plans.ResourceInstanceChange) *Violation {
-	val := linter.getAttributeValueFromDiff(attr.Name, diff.After)
+func (linter *Linter) validateRequired(description ResourceDescription, attr shared.RuleAttributeDefinition, diff *terraform.InstanceDiff) *Violation {
+	val := linter.getAttributeValueFromDiff(attr.Name, diff)
 
 	if val == nil {
 		return &Violation{
 			Attribute:   attr,
-			Change: 	 diff,
-			Reason:      "Attribute is required but undefined",
+			Change:      diff,
+			Description: description,
+			Reason:      "required but undefined",
 			Value:       val,
 		}
 	}
@@ -156,49 +130,18 @@ func (linter *Linter) validateRequired(attr shared.RuleAttributeDefinition, diff
 	return nil
 }
 
-func (linter *Linter) validateContains(attr shared.RuleAttributeDefinition, rule shared.RuleAttributeDefinitionRule, diff *plans.ResourceInstanceChange) *Violation {
-	val := linter.getAttributeValueFromDiff(attr.Name, diff.After); if val == nil {
+func (linter *Linter) validateOneOf(description ResourceDescription, attr shared.RuleAttributeDefinition, rule shared.RuleAttributeDefinitionRule, diff *terraform.InstanceDiff) *Violation {
+	val := linter.getAttributeValueFromDiff(attr.Name, diff)
+	if val == nil {
 		return nil
 	}
 
-	if val.Type().IsListType() {
-		vals := val.AsValueSlice()
-		var ivals []interface{}
-		for _, val := range vals {
-			if val.Type().IsPrimitiveType() {
-				ivals = append(ivals, val.AsString())
-			}
-		}
-
-		if !util.SliceContains(ivals, rule.Contains) {
-			return &Violation{
-				Attribute:   attr,
-				Change:      diff,
-				Reason:      fmt.Sprintf("attribute does not contain %s", *rule.Contains),
-				Value:       val,
-			}
-		}
-	} else if val.Type().IsObjectType() || val.Type().IsMapType() {
-		vals := val.AsValueMap()
-		var keys []interface{}
-
-		for key := range vals {
-			keys = append(keys, key)
-		}
-
-		if !util.SliceContains(keys, rule.Contains) {
-			return &Violation{
-				Attribute:   attr,
-				Change:		 diff,
-				Reason:      fmt.Sprintf("attribute does not contain %s", *rule.Contains),
-				Value:       val,
-			}
-		}
-	} else {
+	if !util.SliceStringContains(rule.OneOf, val.New) {
 		return &Violation{
 			Attribute:   attr,
-			Change:		 diff,
-			Reason:      fmt.Sprintf("attribute type %s is not compatible with contains", val.Type().FriendlyName()),
+			Change:      diff,
+			Description: description,
+			Reason:      fmt.Sprintf("does not contain one of %v", rule.OneOf),
 			Value:       val,
 		}
 	}
@@ -206,25 +149,18 @@ func (linter *Linter) validateContains(attr shared.RuleAttributeDefinition, rule
 	return nil
 }
 
-func (linter *Linter) validateOneOf(attr shared.RuleAttributeDefinition, rule shared.RuleAttributeDefinitionRule, diff *plans.ResourceInstanceChange) *Violation {
-	val := linter.getAttributeValueFromDiff(attr.Name, diff.After); if val == nil {
+func (linter *Linter) validateStartsWith(description ResourceDescription, attr shared.RuleAttributeDefinition, rule shared.RuleAttributeDefinitionRule, diff *terraform.InstanceDiff) *Violation {
+	val := linter.getAttributeValueFromDiff(attr.Name, diff)
+	if val == nil {
 		return nil
 	}
 
-	if val.Type().IsPrimitiveType() {
-		if !util.SliceStringContains(rule.OneOf, val.AsString()) {
-			return &Violation{
-				Attribute:   attr,
-				Change:		 diff,
-				Reason:      fmt.Sprintf("attribute does not contain one of %v", rule.OneOf),
-				Value:       val,
-			}
-		}
-	} else {
+	if !strings.HasPrefix(val.New, *rule.StartsWith) {
 		return &Violation{
 			Attribute:   attr,
-			Change:		 diff,
-			Reason:      fmt.Sprintf("attribute type %s is not compatible with oneOf", val.Type().FriendlyName()),
+			Change:      diff,
+			Description: description,
+			Reason:      "does not start with " + *rule.StartsWith,
 			Value:       val,
 		}
 	}
@@ -232,23 +168,8 @@ func (linter *Linter) validateOneOf(attr shared.RuleAttributeDefinition, rule sh
 	return nil
 }
 
-func (linter *Linter) validateStartsWith(attr shared.RuleAttributeDefinition, rule shared.RuleAttributeDefinitionRule, diff *plans.ResourceInstanceChange) *Violation {
-	val := linter.getAttributeValueFromDiff(attr.Name, diff.After); if val == nil {
-		return nil
+func (linter *Linter) addViolation(violation *Violation) {
+	if violation != nil {
+		linter.Violations = append(linter.Violations, *violation)
 	}
-
-	if !strings.HasPrefix(val.AsString(), *rule.StartsWith) {
-		return &Violation{
-			Attribute:   attr,
-			Change:		 diff,
-			Reason:      "attribute does not start with " + *rule.StartsWith,
-			Value:       val,
-		}
-	}
-
-	return nil
-}
-
-func (linter *Linter) addViolation(violation Violation) {
-	linter.Violations = append(linter.Violations, violation)
 }

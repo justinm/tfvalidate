@@ -9,7 +9,7 @@ import (
 
 type JsonResponse struct {
 	Violations []JsonViolation `json:"violations,omitempty"`
-	Approvers  []string	`json:"approvers,omitempty"`
+	Approvers  []string        `json:"approvers,omitempty"`
 }
 
 type JsonViolation struct {
@@ -24,14 +24,14 @@ func PrintViolations(violations []linter.Violation) {
 	for _, violation := range violations {
 		var moduleName string
 
-		if violation.Change.Addr.Module != nil {
-			moduleName = violation.Change.Addr.Module.String()
-		}
+		//if violation.Change.Addr.Module != nil {
+		//	moduleName = violation.Change.Addr.Module.String()
+		//}
 
 		jsonViolations = append(jsonViolations, JsonViolation{
-			ResourceName: violation.Change.Addr.Resource.String(),
+			ResourceName: violation.Description.Type + "." + violation.Description.Name,
 			ModuleName:   &moduleName,
-			Reason:       violation.Reason,
+			Reason:       fmt.Sprintf("attribute %s %s", violation.Attribute.Name, violation.Reason),
 		})
 	}
 

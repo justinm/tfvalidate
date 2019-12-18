@@ -25,7 +25,7 @@ var (
 	logger = logging.MustGetLogger("")
 
 	action     = flag.String("action", "", "The action to take, one of [lint, approvers]")
-	configPath = flag.String("config", "", "Path to configuration, defaults to ~/.tfvalidate.yaml")
+	configPath = flag.String("config", ".tfvalidate.yaml", "Path to configuration, defaults to ~/.tfvalidate.yaml")
 	verbose    = flag.Bool("verbose", false, "Optional: verbose logging")
 )
 
@@ -63,7 +63,8 @@ func main() {
 
 	config := getConfig()
 
-	plan, err := util.ReadPlan(planPath)
+	expandedPlanPath, _ := homedir.Expand(planPath)
+	plan, err := util.OpenPlan(expandedPlanPath)
 	if err != nil {
 		logger.Errorf("Unable to read plan: %v", err)
 		os.Exit(EXIT_ERR)
@@ -120,14 +121,12 @@ func SetupLogger() {
 }
 
 func GetConfigFile() (*string, error) {
-	if configPath == nil || *configPath == "" {
-		tmpLoc, err := homedir.Expand("~/.tfvalidate.yaml")
-		if err != nil {
-			return nil, err
-		}
-		configPath = &tmpLoc
-		logger.Debugf("Configuration: %s", *configPath)
+	tmpLoc, err := homedir.Expand(*configPath)
+	if err != nil {
+		return nil, err
 	}
 
-	return configPath, nil
+	logger.Debugf("Configuration: %s", *configPath)
+
+	return &tmpLoc, nil
 }

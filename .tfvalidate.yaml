@@ -2,10 +2,8 @@ rules:
   - name: resource tagging
     resources:
       - aws_s3_bucket
+      - aws_rds_cluster
     attributes:
-      - name: "tags"
-        rules:
-          - contains: Region
       - name: "tags.Name"
         rules:
           - startsWith: "org-example-"
